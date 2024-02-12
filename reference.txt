@@ -1,0 +1,9 @@
+1. https://stackoverflow.com/questions/72465878/opencv-omr-sheet-detect-marked-answers-in-python-getting-proper-binarization
+2. https://github.com/Bakhomious/OMR-MCQ-Automated-Grading/blob/master/main.py
+3. https://github.com/salay-jain/OMR-Auto-Grading-System
+4. https://www.youtube.com/watch?v=0IqCOPlGBTs&ab_channel=Murtaza%27sWorkshop-RoboticsandAI
+5. https://www.tutorialspoint.com/applying-gaussian-blur-to-an-image-using-the-pillow-library#:~:text=Step%201%3A%20Import%20Image%20and,Step%204%3A%20Display%20the%20output.
+
+
+
+Aspect ratio issue
