@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageFilter
 import numpy as np
 
 
-image = Image.open('test-images/c-33.jpg')
+image = Image.open('test-images/b-13.jpg')
 
 cropped_image = image.crop((130, 655, 1470, 2100))
 resized_image = cropped_image.resize((850, int((850 / float(cropped_image.size[0])) * float(cropped_image.size[1]))), Image.Resampling.LANCZOS)
@@ -26,8 +26,8 @@ gray_scaled_image = resized_image.convert("L")
 gray_scaled_image.save('resized.png')
 edge_image = gray_scaled_image.filter(ImageFilter.FIND_EDGES)
 gaussian_image = gray_scaled_image.filter(ImageFilter.GaussianBlur(radius=1))
-gaussian_image.save('Guass.png')
-
+gaussian_image.save('guass.png')
+guass_np = np.array(gaussian_image)
 
 thresh = 140
 binarized_image = gaussian_image.point(lambda p: 255 if p > thresh else 0)
@@ -186,14 +186,83 @@ for index, start_x_range in enumerate(start_x_ranges):
             
 
 
-for index, value in enumerate(total_ans):
-    print(index + 1, value)
+# for index, value in enumerate(total_ans):
+#     print(index + 1, value)
 
 
 
 
 print(f'Total answer is {len(total_ans)}')  
-rgb_image.save("final_output_with_filled_circles.png")
+rgb_image.save("final_output.png")
 
 ##########################################################################################
+
+'''
+Find the question with with answer marked beside the question
+
+Idea: Since we know the left top corner, we will move in the left till some threshold, and we check whether the intensity is changing3 times are not
+'''
+
+
+# Load the grayscale image
+image_path = 'guass.png'  
+image = Image.open(image_path).convert('L')  
+draw = ImageDraw.Draw(image)  
+
+# Function to analyze the box for handwriting by checking pixel intensity
+def analyze_box_for_handwriting(image_array, box_coords, intensity_threshold=128):
+    x1, y1, x2, y2 = box_coords
+    box_area = image_array[y1:y2, x1:x2]
+    handwriting_detected = np.any(box_area < intensity_threshold)
+    return handwriting_detected
+
+# Function to check for significant pixels near the right edge of a box
+def check_right_edge_for_handwriting(image_array, box_coords, edge_width=2, intensity_threshold=128):
+    _, y1, x2, y2 = box_coords  # Use only the relevant coordinates
+    right_edge_area = image_array[y1:y2, x2-edge_width:x2]
+    edge_detected = np.any(right_edge_area < intensity_threshold)
+    return edge_detected
+
+# Initialize parameters for the analysis
+start_x, start_y = start_values_left_corner[0]  # Assuming start_values_left_corner is defined
+num_rows = 29
+distance_between_rows = 30
+box_width, box_height = 20, 20
+
+# Convert the image to a NumPy array for pixel analysis
+image_array = np.array(image)
+
+
+for row in range(num_rows):
+    current_y = start_y + row * distance_between_rows
+    for box_index in range((start_x // box_width) - 1):  
+        current_x = box_index * box_width
+        box_coords = (current_x, current_y, current_x + box_width, current_y + box_height)
+
+        # Check the current box for handwriting
+        if analyze_box_for_handwriting(image_array, box_coords):
+            draw.rectangle(box_coords, outline="green", width=2)
+            # Check the right edge of the current box for handwriting to decide on highlighting the next box
+            if check_right_edge_for_handwriting(image_array, box_coords) and box_index < ((start_x // box_width) - 2):
+                next_box_coords = (current_x + box_width, current_y, current_x + 2 * box_width, current_y + box_height)
+                draw.rectangle(next_box_coords, outline="green", width=2)
+
+
+highlighted_image_path = 'highlighted_final_output_adjusted.png'
+image.save(highlighted_image_path)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
