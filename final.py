@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageFilter
 import numpy as np
 
 
-image = Image.open('test-images/b-13.jpg')
+image = Image.open('test-images/b-27.jpg')
 
 cropped_image = image.crop((130, 655, 1470, 2100))
 resized_image = cropped_image.resize((850, int((850 / float(cropped_image.size[0])) * float(cropped_image.size[1]))), Image.Resampling.LANCZOS)
@@ -186,8 +186,6 @@ for index, start_x_range in enumerate(start_x_ranges):
             
 
 
-# for index, value in enumerate(total_ans):
-#     print(index + 1, value)
 
 
 
@@ -204,52 +202,74 @@ Idea: Since we know the left top corner, we will move in the left till some thre
 '''
 
 
-# Load the grayscale image
-image_path = 'guass.png'  
-image = Image.open(image_path).convert('L')  
-draw = ImageDraw.Draw(image)  
+from PIL import Image, ImageDraw
+import numpy as np
 
-# Function to analyze the box for handwriting by checking pixel intensity
-def analyze_box_for_handwriting(image_array, box_coords, intensity_threshold=128):
-    x1, y1, x2, y2 = box_coords
-    box_area = image_array[y1:y2, x1:x2]
-    handwriting_detected = np.any(box_area < intensity_threshold)
-    return handwriting_detected
+def highlight_handwritten_options_near_segment(image_path, segment_start, segment_end, output_path, segment_counter):
+    image = Image.open(image_path).convert('L')
+    draw = ImageDraw.Draw(image)
+    image_array = np.array(image)
+    
+    def analyze_box_for_handwriting(box_coords, intensity_threshold=128):
+        x1, y1, x2, y2 = box_coords
+        box_area = image_array[y1:y2, x1:x2]
+        handwriting_detected = np.any(box_area < intensity_threshold)
+        filled_percentage = np.sum(box_area < intensity_threshold) / box_area.size
+        return handwriting_detected, filled_percentage
+    
+    start_x, start_y = segment_start
+    end_x, _ = segment_end
+    
+    num_rows = 29
+    distance_between_rows = 30
+    box_width, box_height = 20, 20
+    
+    for row in range(num_rows):
+        current_y = start_y + row * distance_between_rows
+        current_x = start_x
+        boxes_to_draw = []
+        flag = False
+        while current_x + box_width * 2 <= end_x:
+            box_coords = (current_x, current_y, current_x + box_width, current_y + box_height)
+            handwriting_detected, filled_percentage = analyze_box_for_handwriting(box_coords)
 
-# Function to check for significant pixels near the right edge of a box
-def check_right_edge_for_handwriting(image_array, box_coords, edge_width=2, intensity_threshold=128):
-    _, y1, x2, y2 = box_coords  # Use only the relevant coordinates
-    right_edge_area = image_array[y1:y2, x2-edge_width:x2]
-    edge_detected = np.any(right_edge_area < intensity_threshold)
-    return edge_detected
+            if handwriting_detected:
+                # Store the box coordinates and whether it meets the fill percentage criterion
+                boxes_to_draw.append((box_coords, filled_percentage >= 0.2))
+                
 
-# Initialize parameters for the analysis
-start_x, start_y = start_values_left_corner[0]  # Assuming start_values_left_corner is defined
-num_rows = 29
-distance_between_rows = 30
-box_width, box_height = 20, 20
+            
+            current_x += box_width  
+        for i, (coords, should_draw) in enumerate(boxes_to_draw):
+            if should_draw or i < len(boxes_to_draw) - 1:  # Always draw except for the last box if it doesn't meet the criterion
+                draw.rectangle(coords, outline="green", width=2)
+                flag = True
+        if flag:
+            index_update = 29 * segment_counter + row 
+            total_ans[index_update] += ' x'
+            flag = False
 
-# Convert the image to a NumPy array for pixel analysis
-image_array = np.array(image)
-
-
-for row in range(num_rows):
-    current_y = start_y + row * distance_between_rows
-    for box_index in range((start_x // box_width) - 1):  
-        current_x = box_index * box_width
-        box_coords = (current_x, current_y, current_x + box_width, current_y + box_height)
-
-        # Check the current box for handwriting
-        if analyze_box_for_handwriting(image_array, box_coords):
-            draw.rectangle(box_coords, outline="green", width=2)
-            # Check the right edge of the current box for handwriting to decide on highlighting the next box
-            if check_right_edge_for_handwriting(image_array, box_coords) and box_index < ((start_x // box_width) - 2):
-                next_box_coords = (current_x + box_width, current_y, current_x + 2 * box_width, current_y + box_height)
-                draw.rectangle(next_box_coords, outline="green", width=2)
+    image.save(output_path)
 
 
-highlighted_image_path = 'highlighted_final_output_adjusted.png'
-image.save(highlighted_image_path)
+# Example usage
+segments_start_and_end_index = [
+    ((0, start_values_left_corner[0][1]), start_values_left_corner[0]),
+    ((start_values_left_corner[0][0] + 174, start_values_left_corner[1][1]), start_values_left_corner[1]),
+    ((start_values_left_corner[1][0] + 174, start_values_left_corner[2][1]), start_values_left_corner[2])
+]
+
+segment_counter  = 0
+for index, (segment_start, segment_end) in enumerate(segments_start_and_end_index):
+    image_path = 'guass.png'  
+    output_path = 'guass.png'
+    highlight_handwritten_options_near_segment(image_path, segment_start, segment_end, output_path, segment_counter)
+    segment_counter += 1
+
+
+for index, value in enumerate(total_ans):
+    print(index + 1, value)
+
 
 
 
