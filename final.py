@@ -202,9 +202,6 @@ Idea: Since we know the left top corner, we will move in the left till some thre
 '''
 
 
-from PIL import Image, ImageDraw
-import numpy as np
-
 def highlight_handwritten_options_near_segment(image_path, segment_start, segment_end, output_path, segment_counter):
     image = Image.open(image_path).convert('L')
     draw = ImageDraw.Draw(image)
@@ -269,7 +266,6 @@ for index, (segment_start, segment_end) in enumerate(segments_start_and_end_inde
 
 for index, value in enumerate(total_ans):
     print(index + 1, value)
-
 
 
 
